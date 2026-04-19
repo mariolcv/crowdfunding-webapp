@@ -1,7 +1,9 @@
-import { auth } from "@/lib/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/lib/auth.config";
 import { NextResponse } from "next/server";
 
-const publicRoutes = ["/", "/proyectos", "/blog", "/login", "/registro", "/privacidad", "/cookies", "/aviso-legal", "/terminos"];
+const { auth } = NextAuth(authConfig);
+
 const authRoutes = ["/login", "/registro"];
 const adminRoutes = ["/admin"];
 
@@ -10,7 +12,6 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const isAdmin = (req.auth?.user as { role?: string })?.role === "ADMIN";
 
-  // API routes: protect /api/admin and /api/wallet and /api/investments
   if (pathname.startsWith("/api/admin") && !isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -24,23 +25,16 @@ export default auth((req) => {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Admin routes
   if (adminRoutes.some((r) => pathname.startsWith(r))) {
-    if (!isAdmin) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
+    if (!isAdmin) return NextResponse.redirect(new URL("/dashboard", req.url));
     return NextResponse.next();
   }
 
-  // Dashboard routes
   if (pathname.startsWith("/dashboard")) {
-    if (!isLoggedIn) {
-      return NextResponse.redirect(new URL(`/login?callbackUrl=${pathname}`, req.url));
-    }
+    if (!isLoggedIn) return NextResponse.redirect(new URL(`/login?callbackUrl=${pathname}`, req.url));
     return NextResponse.next();
   }
 
-  // Auth routes: redirect to dashboard if already logged in
   if (authRoutes.includes(pathname) && isLoggedIn) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
