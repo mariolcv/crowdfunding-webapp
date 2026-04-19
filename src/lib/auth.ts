@@ -6,9 +6,15 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { generateDepositRef } from "@/lib/utils";
 
+function getBaseUrl() {
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
+  trustHost: true,
   pages: {
     signIn: "/login",
     error: "/login",
